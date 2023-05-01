@@ -27,3 +27,6 @@ run:
 		-e AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN} \
 		--env-file $(shell pwd)/.env \
 		${APP_IMAGE}:${PROD_TAG}
+
+apply:
+	cd terraform && terraform apply -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
