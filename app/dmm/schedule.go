@@ -15,6 +15,12 @@ type Slot struct {
 	DateTime  string `json:"dateTime" dynamodbav:"dateTime"`
 }
 
+type SlotWithTTL struct {
+	TeacherId string `json:"teacherId" dynamodbav:"teacherId"`
+	DateTime  string `json:"dateTime" dynamodbav:"dateTime"`
+	Ttl       int64  `json:"ttl" dynamodbav:"ttl"`
+}
+
 func CheckSchedule(teacherId string) (string, []Slot, error) {
 	// get document
 	doc, err := GetDocument(teacherId)

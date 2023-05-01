@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -117,7 +118,12 @@ func AddNewSlots(
 		}
 		reqs := []ddbTypes.WriteRequest{}
 		for _, s := range slots[i:j] {
-			item, err := attributevalue.MarshalMap(s)
+			item, err := attributevalue.MarshalMap(
+				SlotWithTTL{
+					TeacherId: s.TeacherId,
+					DateTime:  s.DateTime,
+					Ttl:       time.Now().Add(7 * 24 * time.Hour).Unix(),
+				})
 			if err != nil {
 				return fmt.Errorf("failed to marshal slot: %s", err)
 			}

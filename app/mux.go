@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/go-chi/chi/v5"
+	"github.com/toshikwa/dmm-schedule-checker/app/handler"
 )
 
 func NewMux(ctx context.Context) (http.Handler, error) {
@@ -26,14 +27,14 @@ func NewMux(ctx context.Context) (http.Handler, error) {
 		return nil, fmt.Errorf("Failed to load config: %s", err)
 	}
 	ddbClient := dynamodb.NewFromConfig(cfg)
-	// add teacher
-	at := &AddTeacherHandler{api: ddbClient}
-	mux.Post("/teacher", at.ServeHTTP)
-	// delete teacher
-	dt := &DeleteTeacherHandler{api: ddbClient}
+	// POST /teacher
+	pt := &handler.PostTeacherHandler{Api: ddbClient}
+	mux.Post("/teacher", pt.ServeHTTP)
+	// DELETE /teacher
+	dt := &handler.DeleteTeacherHandler{Api: ddbClient}
 	mux.Delete("/teacher", dt.ServeHTTP)
-	// check schedule
-	cs := &CheckScheduleHandler{api: ddbClient}
-	mux.Get("/check", cs.ServeHTTP)
+	// GET /check
+	check := &handler.GetCheckHandler{Api: ddbClient}
+	mux.Get("/check", check.ServeHTTP)
 	return mux, nil
 }

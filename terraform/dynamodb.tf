@@ -13,8 +13,8 @@ resource "aws_dynamodb_table" "teacher_table" {
 resource "aws_dynamodb_table" "schedule_table" {
   name           = "${local.app}_schedule_table"
   billing_mode   = "PROVISIONED"
-  read_capacity  = 1
-  write_capacity = 1
+  read_capacity  = 5
+  write_capacity = 5
   hash_key       = "teacherId"
   range_key      = "dateTime"
   attribute {
@@ -24,5 +24,9 @@ resource "aws_dynamodb_table" "schedule_table" {
   attribute {
     name = "dateTime"
     type = "S"
+  }
+  ttl {
+    enabled        = true
+    attribute_name = "ttl"
   }
 }
