@@ -37,7 +37,7 @@ func (h *GetCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(adds) != 0 {
 			// send message to line
-			err = dmm.SendMessage(name, adds)
+			err = dmm.SendMessage(t.Id, name, adds)
 			if err != nil {
 				RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
 				return

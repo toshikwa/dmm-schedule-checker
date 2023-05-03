@@ -71,7 +71,7 @@ func DiffSlots(news, exists []Slot) ([]Slot, []Slot, error) {
 	return adds, dels, nil
 }
 
-func SendMessage(name string, slots []Slot) error {
+func SendMessage(id, name string, slots []Slot) error {
 	if len(slots) == 0 {
 		return nil
 	}
@@ -87,5 +87,6 @@ func SendMessage(name string, slots []Slot) error {
 		time := strings.ReplaceAll(dt[1], "-", ":")
 		msg += fmt.Sprintf("\n%s/%s %s", y, date, time)
 	}
+	msg += fmt.Sprintf("\n-> %s/teacher/index/%s/", dmmUrl, id)
 	return line.SendMessage(msg)
 }
