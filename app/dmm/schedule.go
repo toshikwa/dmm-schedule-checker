@@ -40,25 +40,35 @@ func CheckSchedule(teacherId string) (string, []Slot, error) {
 	return name, slots, nil
 }
 
-func FindSlotDiff(all, sub []Slot) ([]Slot, error) {
-	if len(all) == len(sub) {
-		return []Slot{}, nil
-	}
+func DiffSlots(news, exists []Slot) ([]Slot, []Slot, error) {
 	// sort
-	sort.Slice(all, func(i, j int) bool { return all[i].DateTime < all[j].DateTime })
-	sort.Slice(sub, func(i, j int) bool { return sub[i].DateTime < sub[j].DateTime })
+	sort.Slice(news, func(i, j int) bool { return news[i].DateTime < news[j].DateTime })
+	sort.Slice(exists, func(i, j int) bool { return exists[i].DateTime < exists[j].DateTime })
 	// diff
-	diff := []Slot{}
+	adds := []Slot{}
+	dels := []Slot{}
 	i, j := 0, 0
-	for i < len(all) {
-		if j != len(sub) && all[i] == sub[j] {
+	for {
+		if i == len(news) && j == len(exists) {
+			break
+		} else if j == len(exists) {
+			adds = append(adds, news[i])
+			i += 1
+		} else if i == len(news) {
+			dels = append(dels, exists[j])
+			j += 1
+		} else if news[i].DateTime < exists[j].DateTime {
+			adds = append(adds, news[i])
+			i += 1
+		} else if news[i].DateTime > exists[j].DateTime {
+			dels = append(dels, exists[j])
 			j += 1
 		} else {
-			diff = append(diff, all[i])
+			i += 1
+			j += 1
 		}
-		i += 1
 	}
-	return diff, nil
+	return adds, dels, nil
 }
 
 func SendMessage(name string, slots []Slot) error {

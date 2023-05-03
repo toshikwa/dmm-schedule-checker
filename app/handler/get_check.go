@@ -18,37 +18,44 @@ func (h *GetCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, t := range teachers {
 		// check schedule
-		name, slots, err := dmm.CheckSchedule(t.Id)
+		name, news, err := dmm.CheckSchedule(t.Id)
 		if err != nil {
 			RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if len(slots) == 0 {
-			continue
-		}
 		// check dynamodb
-		exists, err := dmm.ListExistingSlots(ctx, h.Api, t.Id, slots)
+		exists, err := dmm.ListSlots(ctx, h.Api, t.Id)
 		if err != nil {
 			RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// find new slots
-		news, err := dmm.FindSlotDiff(slots, exists)
+		adds, dels, err := dmm.DiffSlots(news, exists)
 		if err != nil {
 			RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// send message to line
-		err = dmm.SendMessage(name, news)
-		if err != nil {
-			RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
-			return
+		if len(adds) != 0 {
+			// send message to line
+			err = dmm.SendMessage(name, adds)
+			if err != nil {
+				RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// add slots
+			err = dmm.AddSlots(ctx, h.Api, t.Id, adds)
+			if err != nil {
+				RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
-		// write to dynamodb
-		err = dmm.AddNewSlots(ctx, h.Api, t.Id, news)
-		if err != nil {
-			RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
-			return
+		if len(dels) != 0 {
+			// delete slots
+			err = dmm.DeleteSlots(ctx, h.Api, t.Id, dels)
+			if err != nil {
+				RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 	RespondMessage(ctx, w, "ok", http.StatusOK)

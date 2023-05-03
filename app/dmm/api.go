@@ -8,9 +8,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	ddbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 var (
@@ -35,8 +35,8 @@ func AddTeacher(
 	api DynamodbPutItemApi,
 	teacherId string,
 ) error {
-	item := map[string]ddbTypes.AttributeValue{
-		"id": &ddbTypes.AttributeValueMemberS{
+	item := map[string]types.AttributeValue{
+		"id": &types.AttributeValueMemberS{
 			Value: teacherId,
 		},
 	}
@@ -60,7 +60,7 @@ func DeleteTeacher(
 	api DynamodbDeleteItemApi,
 	teacherId string,
 ) error {
-	key := map[string]ddbTypes.AttributeValue{
+	key := map[string]types.AttributeValue{
 		"id": &types.AttributeValueMemberS{
 			Value: teacherId,
 		},
@@ -94,6 +94,41 @@ func ListTeachers(
 	return teachers, err
 }
 
+type DynamodbQueryApi interface {
+	Query(
+		ctx context.Context,
+		params *dynamodb.QueryInput,
+		optFns ...func(*dynamodb.Options),
+	) (*dynamodb.QueryOutput, error)
+}
+
+func ListSlots(
+	ctx context.Context,
+	api DynamodbQueryApi,
+	teacherId string,
+) ([]Slot, error) {
+	keyExpr := expression.Key("teacherId").Equal(expression.Value(teacherId))
+	expr, err := expression.NewBuilder().WithKeyCondition(keyExpr).Build()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build expression for query: %v", err)
+	}
+	res, err := api.Query(ctx, &dynamodb.QueryInput{
+		TableName:                 aws.String(scheduleTableName),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		KeyConditionExpression:    expr.KeyCondition(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query slots: %v", err)
+	}
+	slots := []Slot{}
+	err = attributevalue.UnmarshalListOfMaps(res.Items, &slots)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal slots: %v", err)
+	}
+	return slots, err
+}
+
 type DynamodbBatchWriteItemApi interface {
 	BatchWriteItem(
 		ctx context.Context,
@@ -102,21 +137,21 @@ type DynamodbBatchWriteItemApi interface {
 	) (*dynamodb.BatchWriteItemOutput, error)
 }
 
-func AddNewSlots(
+func AddSlots(
 	ctx context.Context,
 	api DynamodbBatchWriteItemApi,
 	teacherId string,
 	slots []Slot,
 ) error {
 	// write 25 or less items at once
-	maxItems := 2
+	maxItems := 25
 	var j int
 	for i := 0; i < len(slots); i += maxItems {
 		j = i + maxItems
 		if j > len(slots) {
 			j = len(slots)
 		}
-		reqs := []ddbTypes.WriteRequest{}
+		reqs := []types.WriteRequest{}
 		for _, s := range slots[i:j] {
 			item, err := attributevalue.MarshalMap(
 				SlotWithTTL{
@@ -127,10 +162,10 @@ func AddNewSlots(
 			if err != nil {
 				return fmt.Errorf("failed to marshal slot: %s", err)
 			}
-			reqs = append(reqs, ddbTypes.WriteRequest{PutRequest: &ddbTypes.PutRequest{Item: item}})
+			reqs = append(reqs, types.WriteRequest{PutRequest: &types.PutRequest{Item: item}})
 		}
 		input := &dynamodb.BatchWriteItemInput{
-			RequestItems: map[string][]ddbTypes.WriteRequest{
+			RequestItems: map[string][]types.WriteRequest{
 				scheduleTableName: reqs,
 			},
 		}
@@ -142,39 +177,37 @@ func AddNewSlots(
 	return nil
 }
 
-type DynamodbBatchGetItemApi interface {
-	BatchGetItem(
-		ctx context.Context,
-		params *dynamodb.BatchGetItemInput,
-		optFns ...func(*dynamodb.Options),
-	) (*dynamodb.BatchGetItemOutput, error)
-}
-
-func ListExistingSlots(
+func DeleteSlots(
 	ctx context.Context,
-	api DynamodbBatchGetItemApi,
+	api DynamodbBatchWriteItemApi,
 	teacherId string,
 	slots []Slot,
-) ([]Slot, error) {
-	keys := []map[string]ddbTypes.AttributeValue{}
-	for _, s := range slots {
-		item, err := attributevalue.MarshalMap(s)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal slot: %s", err)
+) error {
+	// write 25 or less items at once
+	maxItems := 25
+	var j int
+	for i := 0; i < len(slots); i += maxItems {
+		j = i + maxItems
+		if j > len(slots) {
+			j = len(slots)
 		}
-		keys = append(keys, item)
+		reqs := []types.WriteRequest{}
+		for _, s := range slots[i:j] {
+			key, err := attributevalue.MarshalMap(s)
+			if err != nil {
+				return fmt.Errorf("failed to marshal slot: %s", err)
+			}
+			reqs = append(reqs, types.WriteRequest{DeleteRequest: &types.DeleteRequest{Key: key}})
+		}
+		input := &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				scheduleTableName: reqs,
+			},
+		}
+		_, err := api.BatchWriteItem(ctx, input)
+		if err != nil {
+			return fmt.Errorf("failed to batch write: %v", err)
+		}
 	}
-	input := &dynamodb.BatchGetItemInput{
-		RequestItems: map[string]ddbTypes.KeysAndAttributes{
-			scheduleTableName: {Keys: keys},
-		},
-	}
-	res, err := api.BatchGetItem(ctx, input)
-	exists := []Slot{}
-	var s Slot
-	for _, item := range res.Responses[scheduleTableName] {
-		_ = attributevalue.UnmarshalMap(item, &s)
-		exists = append(exists, s)
-	}
-	return exists, err
+	return nil
 }
