@@ -2,7 +2,7 @@
 
 DMM schedule checker continuously monitors the schedule of your favorite teachers, and notifies via LINE whenever new slots are available.
 
-## Usage
+## Installation
 
 You need to have [Docker CLI](https://github.com/docker/cli) (or [Fintch](https://github.com/runfinch/finch)), [AWS CLI](https://github.com/aws/aws-cli) and [Terraform](https://github.com/hashicorp/terraform) installed on your machine.
 
@@ -43,7 +43,9 @@ docker push ${IMAGE}:latest
 terraform apply -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
 ```
 
-To add/delete your favorite teacher, you can simple call the API as follows. (Currently, we don't have frontend application for it.)
+## Usage
+
+To add/delete your favorite teacher, you can simple call the API as follows. Currently, we don't have frontend application for it.
 
 ```bash
 # add teacher
