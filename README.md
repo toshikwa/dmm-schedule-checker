@@ -48,10 +48,10 @@ To add/delete your favorite teacher, you can simple call the API as follows. (Cu
 ```bash
 # add teacher
 curl -X POST -H "Content-Type: application/json" \
-    -d '{"id": "5_DIGITS_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
+    -d '{"id": "5_DIGIT_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
 # delete teacher
 curl -X DELETE -H "Content-Type: application/json" \
-    -d '{"id": "5_DIGITS_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
+    -d '{"id": "5_DIGIT_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
 ```
 
 The application checks the schedule of enrolled teachers every 20 seconds, and notifies via LINE whenever new slots are available.
