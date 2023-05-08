@@ -4,8 +4,6 @@ data "aws_region" "current" {}
 terraform {
   required_version = ">= 1.4.0"
   backend "s3" {
-    bucket  = "dmm-schedule-checker"
-    region  = "ap-northeast-1"
     key     = "terraform.tfstate"
     encrypt = true
   }
