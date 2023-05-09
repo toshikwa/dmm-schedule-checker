@@ -3,7 +3,6 @@ package dmm
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,15 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
-
-var (
-	teacherTableName  = os.Getenv("TEACHER_TABLE_NAME")
-	scheduleTableName = os.Getenv("SCHEDULE_TABLE_NAME")
-)
-
-type Teacher struct {
-	Id string `json:"id" dynamodbav:"id"`
-}
 
 type DynamodbPutItemApi interface {
 	PutItem(

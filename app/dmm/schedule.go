@@ -2,6 +2,8 @@ package dmm
 
 import (
 	"fmt"
+	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -9,6 +11,16 @@ import (
 
 	"github.com/toshikwa/dmm-schedule-checker/app/line"
 )
+
+var (
+	teacherTableName  = os.Getenv("TEACHER_TABLE_NAME")
+	scheduleTableName = os.Getenv("SCHEDULE_TABLE_NAME")
+	teacherIdPattern  = regexp.MustCompile(`[0-9]{5}`)
+)
+
+type Teacher struct {
+	Id string `json:"id" dynamodbav:"id"`
+}
 
 type Slot struct {
 	TeacherId string `json:"teacherId" dynamodbav:"teacherId"`
@@ -19,6 +31,10 @@ type SlotWithTTL struct {
 	TeacherId string `json:"teacherId" dynamodbav:"teacherId"`
 	DateTime  string `json:"dateTime" dynamodbav:"dateTime"`
 	Ttl       int64  `json:"ttl" dynamodbav:"ttl"`
+}
+
+func AssertTeacherId(teacherId string) bool {
+	return teacherIdPattern.MatchString(teacherId)
 }
 
 func CheckSchedule(teacherId string) (string, []Slot, error) {

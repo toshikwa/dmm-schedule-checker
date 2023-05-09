@@ -19,6 +19,10 @@ func (h *DeleteTeacherHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if !dmm.AssertTeacherId(body.Id) {
+		RespondMessage(ctx, w, "Teacher ID must be 5-digit numeric string", http.StatusBadRequest)
+		return
+	}
 	err := dmm.DeleteTeacher(ctx, h.Api, body.Id)
 	if err != nil {
 		RespondMessage(ctx, w, err.Error(), http.StatusInternalServerError)
