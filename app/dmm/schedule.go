@@ -96,9 +96,11 @@ func SendMessage(id, name string, slots []Slot) error {
 	for _, s := range slots {
 		dt := strings.Split(s.DateTime, "_")
 		date := strings.ReplaceAll(dt[0], "-", "/")
-		y := strconv.Itoa(year)
+		var y string
 		if month == 12 && date[0:2] == "01" {
 			y = strconv.Itoa(year + 1)
+		} else {
+			y = strconv.Itoa(year)
 		}
 		time := strings.ReplaceAll(dt[1], "-", ":")
 		msg += fmt.Sprintf("\n%s/%s %s", y, date, time)

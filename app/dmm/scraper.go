@@ -50,7 +50,7 @@ func ParseAvailableSlots(doc *goquery.Document, teacherId string) ([]Slot, error
 		return nil, errors.New("failed to parse available slot")
 	}
 	for _, node := range nodes[:3] {
-		date := node.FirstChild.Data
+		date := strings.TrimSpace(node.FirstChild.Data)
 		date = strings.ReplaceAll(date, "月", "-")
 		date = strings.ReplaceAll(date, "日", "")
 		for elem := node.NextSibling; elem != nil; elem = elem.NextSibling {
