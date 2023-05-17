@@ -4,7 +4,7 @@ DMM schedule checker continuously monitors the schedule of your favorite teacher
 
 ## Installation
 
-You need to have [Docker CLI](https://github.com/docker/cli) (or [Fintch](https://github.com/runfinch/finch)), [AWS CLI](https://github.com/aws/aws-cli) and [Terraform](https://github.com/hashicorp/terraform) installed on your machine.
+You need to have [Docker CLI](https://github.com/docker/cli) (or [Finch](https://github.com/runfinch/finch)), [AWS CLI](https://github.com/aws/aws-cli) and [Terraform](https://github.com/hashicorp/terraform) installed on your machine.
 
 You can deploy DMM schedule checker to your AWS account as follows.
 
@@ -50,10 +50,9 @@ To add/delete your favorite teacher, you can simple call the API as follows. Cur
 ```bash
 # add teacher
 curl -X POST -H "Content-Type: application/json" \
-    -d '{"id": "5_DIGIT_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
+    -d '{"id": "5_DIGIT_TEACHER_ID"}' APP_RUNNER_ENDPOINT_URL/teachers
 # delete teacher
-curl -X DELETE -H "Content-Type: application/json" \
-    -d '{"id": "5_DIGIT_TEACHER_ID"}' YOUR_APP_RUNNER_ENDPOINT_URL/teacher
+curl -X DELETE APP_RUNNER_ENDPOINT_URL/teachers/{5_DIGIT_TEACHER_ID}
 ```
 
 The application checks the schedule of enrolled teachers every 20 seconds, and notifies via LINE whenever new slots are available.

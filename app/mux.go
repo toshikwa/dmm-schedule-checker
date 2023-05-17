@@ -27,12 +27,12 @@ func NewMux(ctx context.Context) (http.Handler, error) {
 		return nil, fmt.Errorf("Failed to load config: %s", err)
 	}
 	ddbClient := dynamodb.NewFromConfig(cfg)
-	// POST /teacher
+	// POST /teachers
 	pt := &handler.PostTeacherHandler{Api: ddbClient}
-	mux.Post("/teacher", pt.ServeHTTP)
-	// DELETE /teacher
+	mux.Post("/teachers", pt.ServeHTTP)
+	// DELETE /teachers/:id
 	dt := &handler.DeleteTeacherHandler{Api: ddbClient}
-	mux.Delete("/teacher", dt.ServeHTTP)
+	mux.Delete("/teachers/{id}", dt.ServeHTTP)
 	// GET /check
 	check := &handler.GetCheckHandler{Api: ddbClient}
 	mux.Get("/check", check.ServeHTTP)

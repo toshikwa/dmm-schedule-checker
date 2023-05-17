@@ -56,3 +56,30 @@ func TestDiffSlots(t *testing.T) {
 		})
 	}
 }
+
+func TestAssertTeacherId(t *testing.T) {
+	t.Helper()
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{
+			input: "53216",
+			want:  true,
+		},
+		{
+			input: "532160",
+			want:  false,
+		},
+	}
+	for i, tt := range tests {
+		tt := tt
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+			got := AssertTeacherId(tt.input)
+			if got != tt.want {
+				t.Errorf("input %+v, got %+v, want %+v", tt.input, got, tt.want)
+			}
+		})
+	}
+}

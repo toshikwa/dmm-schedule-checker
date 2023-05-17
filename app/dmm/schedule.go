@@ -15,7 +15,7 @@ import (
 var (
 	teacherTableName  = os.Getenv("TEACHER_TABLE_NAME")
 	scheduleTableName = os.Getenv("SCHEDULE_TABLE_NAME")
-	teacherIdPattern  = regexp.MustCompile(`[0-9]{5}`)
+	teacherIdPattern  = regexp.MustCompile(`^\d{5}$`)
 )
 
 type Teacher struct {
