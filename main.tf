@@ -15,6 +15,10 @@ locals {
   app = "dmm_schedule_checker"
 }
 
-variable "line_access_token" {
+variable "line_notify_access_token" {
   type = string
+}
+
+output "endpoint" {
+  value = aws_apprunner_service.default.service_url
 }
