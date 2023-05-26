@@ -4,43 +4,44 @@ DMM schedule checker continuously monitors the schedule of your favorite teacher
 
 ## Installation
 
-You need to have [Docker CLI](https://github.com/docker/cli) (or [Finch](https://github.com/runfinch/finch)), [AWS CLI](https://github.com/aws/aws-cli) and [Terraform](https://github.com/hashicorp/terraform) installed on your machine.
+You need to have [Docker CLI](https://github.com/docker/cli), [AWS CLI](https://github.com/aws/aws-cli) and [Terraform](https://github.com/hashicorp/terraform) installed on your machine.
 
-You can deploy DMM schedule checker to your AWS account as follows.
+### Generate LINE Notify access token
+
+Then, you need to generate [LINE Notify](https://notify-bot.line.me/) access token.
+
+- go to [mypage](https://notify-bot.line.me/my/)
+- click "Generate token"
+- select "1-on-1 chat with LINE Notify" and generate
+
+Let's save the generated token in the `.env.local` file.
 
 ```bash
-# you need LINE access token to send messages
-LINE_ACCESS_TOKEN="YOUR_TOKEN"
+echo "LINE_NOTIFY_ACCESS_TOKEN=[YOUR_ACCESS_TOKEN]" >> .env.local
+```
 
-# set env
+### Deploy backend API
+
+You can deploy backend API for DMM schedule checker to your AWS account as follows.
+
+```bash
+# load access token from .env.local file
+source .env.local
+
+# set envs
 AWS_REGION=ap-northeast-1
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
-IMAGE=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/dmm_schedule_checker
 
 # create S3 bucket to store tfstate
 aws s3 mb s3://dmm-schedule-checker-${ACCOUNT_ID} --region ${AWS_REGION}
 
-# build image
-docker build -t ${IMAGE} --target prod app
-
-# initialize
-cd terraform
+# initialize terraform
 terraform init \
     -backend-config="bucket=dmm-schedule-checker-${ACCOUNT_ID}" \
     -backend-config="region=${AWS_REGION}" -reconfigure
 
-# create ECR repo
-terraform apply --target=aws_ecr_repository.default \
-    -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
-
-# push image
-aws ecr get-login-password --region ${AWS_REGION} | \
-    docker login --username AWS --password-stdin \
-    ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-docker push ${IMAGE}:latest
-
 # deploy application
-terraform apply -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
+terraform apply -var="line_notify_access_token=${LINE_NOTIFY_ACCESS_TOKEN}" -auto-approve
 ```
 
 ## Usage
@@ -48,11 +49,32 @@ terraform apply -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
 To add/delete your favorite teacher, you can simple call the API as follows. Currently, we don't have frontend application for it.
 
 ```bash
+# API endpoint
+ENDPOINT_URL=https://$(terraform output --raw endpoint)
+
 # add teacher
 curl -X POST -H "Content-Type: application/json" \
-    -d '{"id": "5_DIGIT_TEACHER_ID"}' APP_RUNNER_ENDPOINT_URL/teachers
+    -d '{"id": "5_DIGIT_TEACHER_ID"}' ${ENDPOINT_URL}/teachers
+
 # delete teacher
-curl -X DELETE APP_RUNNER_ENDPOINT_URL/teachers/{5_DIGIT_TEACHER_ID}
+curl -X DELETE ${ENDPOINT_URL}/teachers/5_DIGIT_TEACHER_ID
 ```
 
 The application checks the schedule of enrolled teachers every 20 seconds, and notifies via LINE whenever new slots are available.
+
+## Clean up
+
+You can clean up all resources as follows.
+
+```bash
+# set envs
+AWS_REGION=ap-northeast-1
+ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+
+# clean up api resources
+terraform destroy -var="line_notify_access_token=" -auto-approve
+
+# remove tfstate file and s3 bucket
+aws s3 rm s3://dmm-schedule-checker-${ACCOUNT_ID}/terraform.tfstate --region ${AWS_REGION}
+aws s3 rb s3://dmm-schedule-checker-${ACCOUNT_ID} --region ${AWS_REGION}
+```

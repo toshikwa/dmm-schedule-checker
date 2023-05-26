@@ -1,3 +1,4 @@
+// ecr
 resource "aws_ecr_repository" "default" {
   name                 = local.app
   image_tag_mutability = "MUTABLE"
@@ -6,6 +7,22 @@ resource "aws_ecr_repository" "default" {
     scan_on_push = true
   }
 }
+data "aws_ecr_authorization_token" "default" {}
+resource "null_resource" "image_push" {
+  triggers = {
+    code_diff = join("", [for file in fileset("app/", "**/*.go") : filebase64("app/${file}")])
+  }
+  provisioner "local-exec" {
+    command = <<-EOF
+      docker build -t ${aws_ecr_repository.default.repository_url}:latest app
+      docker login -u AWS -p ${data.aws_ecr_authorization_token.default.password} ${data.aws_ecr_authorization_token.default.proxy_endpoint}
+      docker push ${aws_ecr_repository.default.repository_url}:latest
+    EOF
+  }
+  depends_on = [aws_ecr_repository.default]
+}
+
+// iam - access role
 resource "aws_iam_role" "access_role" {
   name = "${local.app}_access_role"
   assume_role_policy = jsonencode({
@@ -22,9 +39,11 @@ resource "aws_iam_role" "access_role" {
   })
 }
 resource "aws_iam_role_policy_attachment" "access_role" {
-  role       = "${local.app}_access_role"
+  role       = aws_iam_role.access_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
 }
+
+// iam - instance role
 resource "aws_iam_role" "instance_role" {
   name = "${local.app}_instance_role"
   assume_role_policy = jsonencode({
@@ -55,6 +74,18 @@ resource "aws_iam_role_policy_attachment" "instance_role" {
   role       = aws_iam_role.instance_role.name
   policy_arn = aws_iam_policy.instance_role.arn
 }
+
+// wait for 5 secs to avoid error
+resource "time_sleep" "wait" {
+  create_duration = "5s"
+  depends_on = [
+    null_resource.image_push,
+    aws_iam_role_policy_attachment.access_role,
+    aws_iam_role_policy_attachment.instance_role,
+  ]
+}
+
+// app runner service
 resource "aws_apprunner_service" "default" {
   service_name = local.app
   source_configuration {
@@ -65,11 +96,11 @@ resource "aws_apprunner_service" "default" {
       image_configuration {
         port = 8000
         runtime_environment_variables = {
-          AWS_REGION          = data.aws_region.current.name
-          PORT                = 8000
-          TEACHER_TABLE_NAME  = aws_dynamodb_table.teacher_table.name
-          SCHEDULE_TABLE_NAME = aws_dynamodb_table.schedule_table.name
-          LINE_ACCESS_TOKEN   = var.line_access_token
+          AWS_REGION               = data.aws_region.current.name
+          PORT                     = 8000
+          TEACHER_TABLE_NAME       = aws_dynamodb_table.teacher_table.name
+          SCHEDULE_TABLE_NAME      = aws_dynamodb_table.schedule_table.name
+          LINE_NOTIFY_ACCESS_TOKEN = var.line_notify_access_token
         }
       }
       image_identifier      = "${aws_ecr_repository.default.repository_url}:latest"
@@ -87,4 +118,5 @@ resource "aws_apprunner_service" "default" {
     timeout  = 20
     interval = 20
   }
+  depends_on = [time_sleep.wait]
 }

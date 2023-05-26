@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	accessToken = os.Getenv("LINE_ACCESS_TOKEN")
+	accessToken = os.Getenv("LINE_NOTIFY_ACCESS_TOKEN")
 	lineUrl     = "https://notify-api.line.me/api/notify"
 )
 

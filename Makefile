@@ -26,4 +26,4 @@ run:
 		${APP_IMAGE}:${PROD_TAG}
 
 apply:
-	cd terraform && terraform apply -var="line_access_token=${LINE_ACCESS_TOKEN}" -auto-approve
+	terraform apply -var="line_notify_access_token=${LINE_NOTIFY_ACCESS_TOKEN}" -auto-approve
