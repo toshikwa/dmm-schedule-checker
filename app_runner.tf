@@ -100,7 +100,7 @@ resource "aws_apprunner_service" "default" {
           PORT                     = 8000
           TEACHER_TABLE_NAME       = aws_dynamodb_table.teacher_table.name
           SCHEDULE_TABLE_NAME      = aws_dynamodb_table.schedule_table.name
-          LINE_NOTIFY_ACCESS_TOKEN = var.line_notify_access_token
+          LINE_NOTIFY_ACCESS_TOKEN = local.envs["LINE_NOTIFY_ACCESS_TOKEN"]
         }
       }
       image_identifier      = "${aws_ecr_repository.default.repository_url}:latest"

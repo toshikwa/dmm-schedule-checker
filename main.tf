@@ -15,8 +15,8 @@ locals {
   app = "dmm_schedule_checker"
 }
 
-variable "line_notify_access_token" {
-  type = string
+locals {
+  envs = { for tuple in regexall("(.*)=(.*)", file(".env.local")) : tuple[0] => sensitive(tuple[1]) }
 }
 
 output "endpoint" {

@@ -25,9 +25,6 @@ echo "LINE_NOTIFY_ACCESS_TOKEN=[YOUR_ACCESS_TOKEN]" >> .env.local
 You can deploy backend API for DMM schedule checker to your AWS account as follows.
 
 ```bash
-# load access token from .env.local file
-source .env.local
-
 # set envs
 AWS_REGION=ap-northeast-1
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
@@ -41,7 +38,7 @@ terraform init \
     -backend-config="region=${AWS_REGION}" -reconfigure
 
 # deploy application
-terraform apply -var="line_notify_access_token=${LINE_NOTIFY_ACCESS_TOKEN}" -auto-approve
+terraform apply -auto-approve
 ```
 
 ## Usage
@@ -72,7 +69,7 @@ AWS_REGION=ap-northeast-1
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 
 # clean up api resources
-terraform destroy -var="line_notify_access_token=" -auto-approve
+terraform destroy -auto-approve
 
 # remove tfstate file and s3 bucket
 aws s3 rm s3://dmm-schedule-checker-${ACCOUNT_ID}/terraform.tfstate --region ${AWS_REGION}
